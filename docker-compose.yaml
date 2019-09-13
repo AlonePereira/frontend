@@ -1,0 +1,28 @@
+version: '3'
+services:
+  scm:
+    image: "alonesilva/backend-scm:alpha"
+    ports:
+      - "3030:3030"
+  mongo:
+    image: "mongo:latest"
+    ports:
+      - "27017:27017"
+    networks: 
+      - questcode
+  user:
+    image: "alonesilva/backend-user:alpha"
+    depends_on:
+      - "mongo"
+    ports:
+      - "3020:3020"
+    networks:
+      - questcode
+  frontend:
+    image: "alonesilva/frontend:latest"
+    ports:
+      - "80:80"
+
+networks:
+  questcode:
+    driver: bridge
