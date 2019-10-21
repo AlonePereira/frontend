@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: alonesilva/frontend:latest
+        image: alonesilva/frontend:staging
         ports:
         - containerPort: 80
