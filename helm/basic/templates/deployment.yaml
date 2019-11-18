@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: alonesilva/frontend:staging
+        image: alonesilva/frontend:{{ .Values.image.tag }}
         ports:
         - containerPort: 80
