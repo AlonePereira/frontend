@@ -13,6 +13,7 @@ podTemplate(
         def REPOS
         def IMAGE_VERSION
         def IMAGE_NAME = "frontend"
+        def IMAGE_POSTFIX = ""
         def ENVIRONMENT
         def GIT_REPOS_URL = "git@github.com:AlonePereira/frontend.git"
         def GIT_BRANCH
@@ -20,6 +21,7 @@ podTemplate(
         def CHARTMUSEUM_URL = "http://helm-chartmuseum:8080"
         def HELM_DEPLOY_NAME
         def HELM_CHART_NAME = "questcode/frontend"
+        def NODE_PORT = "30080"
 
         stage('Checkout') {
             REPOS = checkout([$class: 'GitSCM', branches: [[name: '*/master'], [name: '*/develop']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github', url: GIT_REPOS_URL]]])
@@ -31,6 +33,8 @@ podTemplate(
             } else if (GIT_BRANCH.equals("origin/develop")) {
                 KUBE_NAMESPACE = "staging"
                 ENVIRONMENT = "staging"
+                IMAGE_POSTFIX = "-RC"
+                NODE_PORT = "31080"
             } else {
                 def error = "Não existe pipeline para a branch ${GIT_BRANCH}"
                 echo error
@@ -39,7 +43,7 @@ podTemplate(
 
             HELM_DEPLOY_NAME = KUBE_NAMESPACE + "-frontend"
             IMAGE_VERSION = sh returnStdout: true, script: 'sh read-package-version.sh'
-            IMAGE_VERSION = IMAGE_VERSION.trim()
+            IMAGE_VERSION = IMAGE_VERSION.trim() + IMAGE_POSTFIX
         }
         stage('Package') {
             container('docker-container') {
@@ -59,9 +63,9 @@ podTemplate(
                     helm repo update
                 """
                 try {
-                    sh "helm upgrade ${HELM_DEPLOY_NAME} ${HELM_CHART_NAME} --namespace ${KUBE_NAMESPACE} --set image.tag=${IMAGE_VERSION}"
+                    sh "helm upgrade ${HELM_DEPLOY_NAME} ${HELM_CHART_NAME} --namespace ${KUBE_NAMESPACE} --set image.tag=${IMAGE_VERSION} --set service.nodePort=${NODE_PORT}"
                 } catch (Exception e) {
-                    sh "helm install ${HELM_DEPLOY_NAME} ${HELM_CHART_NAME} --namespace ${KUBE_NAMESPACE} --set image.tag=${IMAGE_VERSION}"
+                    sh "helm install ${HELM_DEPLOY_NAME} ${HELM_CHART_NAME} --namespace ${KUBE_NAMESPACE} --set image.tag=${IMAGE_VERSION} --set service.nodePort=${NODE_PORT}"
                 }
             }
         }
