@@ -24,6 +24,7 @@ podTemplate(
         def NODE_PORT = "30080"
 
         stage('Checkout') {
+            echo "Branch:" + env.GIT_BRANCH
             REPOS = checkout([$class: 'GitSCM', branches: [[name: env.GIT_BRANCH ]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github', url: GIT_REPOS_URL]]])
             GIT_BRANCH = REPOS.GIT_BRANCH
             
