@@ -1,5 +1,7 @@
+def LABEL_ID = "questcode-${UUID.randomUUID().toString()}"
+
 podTemplate(
-    label: 'questcode', 
+    label: LABEL_ID, 
     containers: [
         containerTemplate(args: 'cat', name: 'docker-container', command: '/bin/sh -c', image: 'docker', ttyEnabled: true),
         containerTemplate(args: 'cat', name: 'helm-container', command: '/bin/sh -c', image: 'lachlanevenson/k8s-helm:v3.0.2', ttyEnabled: true)
@@ -9,28 +11,29 @@ podTemplate(
     ]
 )
 {
-    node('questcode') {
-        def REPOS
-        def IMAGE_VERSION
-        def IMAGE_NAME = "frontend"
-        def IMAGE_POSTFIX = ""
-        def ENVIRONMENT
-        def GIT_REPOS_URL = "git@github.com:AlonePereira/frontend.git"
-        def GIT_BRANCH
-        def KUBE_NAMESPACE
-        def CHARTMUSEUM_URL = "http://helm-chartmuseum:8080"
-        def HELM_DEPLOY_NAME
-        def HELM_CHART_NAME = "questcode/frontend"
-        def NODE_PORT = "30080"
+
+    def REPOS
+    def IMAGE_VERSION
+    def IMAGE_NAME = "frontend"
+    def IMAGE_POSTFIX = ""
+    def ENVIRONMENT
+    def GIT_BRANCH
+    def KUBE_NAMESPACE
+    def CHARTMUSEUM_URL = "http://helm-chartmuseum:8080"
+    def HELM_DEPLOY_NAME
+    def HELM_CHART_NAME = "questcode/frontend"
+    def NODE_PORT = "30080"
+
+    node(LABEL_ID) {
 
         stage('Checkout') {
-            REPOS = checkout([$class: 'GitSCM', branches: [[name: "*/master" ], [name: "*/develop" ]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github', url: GIT_REPOS_URL]]])
+            REPOS = checkout scm
             GIT_BRANCH = REPOS.GIT_BRANCH
             
-            if (GIT_BRANCH.equals("origin/master")) {
+            if (GIT_BRANCH.equals("master")) {
                 KUBE_NAMESPACE = "prod"
                 ENVIRONMENT = "production"
-            } else if (GIT_BRANCH.equals("origin/develop")) {
+            } else if (GIT_BRANCH.equals("develop")) {
                 KUBE_NAMESPACE = "staging"
                 ENVIRONMENT = "staging"
                 IMAGE_POSTFIX = "-RC"
@@ -45,6 +48,7 @@ podTemplate(
             IMAGE_VERSION = sh returnStdout: true, script: 'sh read-package-version.sh'
             IMAGE_VERSION = IMAGE_VERSION.trim() + IMAGE_POSTFIX
         }
+        
         stage('Package') {
             container('docker-container') {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKER_HUB_PASSWORD', usernameVariable: 'DOCKER_HUB_USER')]) {
@@ -54,6 +58,7 @@ podTemplate(
                 }
             }
         }
+
         stage('Deploy') {
             container('helm-container') {
                 echo 'Iniciando Deploy com Helm'
