@@ -44,7 +44,7 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   hosts:
     - host: questcode.org
-      paths: []
+      paths: ["/"]
 
   tls: []
   #  - secretName: chart-example-tls
